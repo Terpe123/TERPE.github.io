@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101827">
+  <meta name="description" content="依照時間與心情抽一件生活小任務，累積每天的小小成就。">
+  <title>今天先做哪件事？｜生活任務抽籤器</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101827;
+      --panel: #192438;
+      --input: #111c2d;
+      --text: #edf3ff;
+      --muted: #aab9cf;
+      --accent: #9af0cb;
+      --line: #34435b;
+      --danger: #ffb5be;
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, "Segoe UI",
+        "Noto Sans TC", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(ellipse at 10% 0%, #203951 0, transparent 48%),
+        var(--bg);
+      line-height: 1.65;
+    }
+
+    button, input, select { font: inherit; }
+
+    button, input, select {
+      border-radius: 12px;
+      min-height: 44px;
+    }
+
+    button {
+      padding: 10px 16px;
+      border: 1px solid transparent;
+      color: #10291f;
+      background: var(--accent);
+      font-weight: 750;
+      cursor: pointer;
+      transition: transform .15s, filter .15s;
+    }
+
+    button:hover:not(:disabled) {
+      filter: brightness(1.07);
+      transform: translateY(-1px);
+    }
+
+    button:active:not(:disabled) { transform: translateY(0); }
+
+    button:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+    }
+
+    button.secondary {
+      color: var(--text);
+      background: #26354b;
+      border-color: var(--line);
+    }
+
+    button.danger {
+      color: var(--danger);
+      background: transparent;
+      border-color: #764856;
+    }
+
+    button.small {
+      padding: 7px 12px;
+      font-size: .88rem;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px 12px;
+      color: var(--text);
+      background: var(--input);
+      border: 1px solid var(--line);
+    }
+
+    :focus-visible {
+      outline: 3px solid #a9d6ff;
+      outline-offset: 4px;
+    }
+
+    label {
+      display: block;
+      color: var(--muted);
+      font-size: .88rem;
+      margin-bottom: 7px;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1.22; }
+    h2 { font-size: 1.2rem; margin-bottom: 8px; }
+    h3 { font-size: 1rem; }
+    p { margin-bottom: 12px; }
+    [hidden] { display: none !important; }
+
+    .container {
+      max-width: 1120px;
+      padding: 48px 22px 24px;
+      margin: auto;
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      font-size: .8rem;
+      letter-spacing: .15em;
+      font-weight: 800;
+      margin-bottom: 14px;
+    }
+
+    .intro { max-width: 680px; color: var(--muted); }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin: 28px 0;
+    }
+
+    .stat {
+      padding: 18px 22px;
+      border: 1px solid var(--line);
+      border-radius: 17px;
+      background: #192438c9;
+    }
+
+    .stat strong {
+      display: block;
+      color: var(--accent);
+      font-size: 2rem;
+      line-height: 1.3;
+    }
+
+    .stat span { font-size: .87rem; color: var(--muted); }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1.05fr 1fr;
+      gap: 22px;
+      align-items: start;
+    }
+
+    .panel {
+      padding: 25px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 12px 30px #00000012;
+      min-width: 0;
+    }
+
+    .muted { color: var(--muted); font-size: .9rem; }
+
+    .fields {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 20px 0 16px;
+    }
+
+    .full-button { width: 100%; }
+
+    .result {
+      min-height: 270px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 26px 18px;
+      margin-top: 20px;
+      border-radius: 18px;
+      border: 1px dashed #52726e;
+      background: linear-gradient(145deg, #213d40, #1a2a3e);
+    }
+
+    .result-icon { font-size: 3.1rem; line-height: 1.4; }
+    .result h3 {
+      font-size: 1.4rem;
+      margin: 12px 0 8px;
+      overflow-wrap: anywhere;
+    }
+
+    .result p { color: #c2d4d9; font-size: .92rem; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+
+    .result .actions {
+      justify-content: center;
+      margin-top: 10px;
+    }
+
+    .tip {
+      margin: 16px 0 0;
+      font-size: .82rem;
+      color: var(--muted);
+    }
+
+    .form-area {
+      margin: 18px 0 22px;
+      padding: 16px;
+      background: #111c2d88;
+      border-radius: 15px;
+    }
+
+    .form-area .fields { margin-top: 12px; }
+    .form-area h3 { margin-bottom: 12px; }
+
+    .list {
+      padding: 0;
+      margin: 0;
+      list-style: none;
+    }
+
+    .task-list {
+      max-height: 380px;
+      overflow-y: auto;
+      padding-right: 5px;
+      scrollbar-color: #52726e transparent;
+    }
+
+    .list-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .list-item:last-child { border-bottom: 0; }
+    .item-info { flex: 1; min-width: 0; }
+
+    .item-title {
+      display: block;
+      font-weight: 650;
+      overflow-wrap: anywhere;
+    }
+
+    .item-meta {
+      display: block;
+      color: var(--muted);
+      font-size: .8rem;
+      margin-top: 3px;
+    }
+
+    .item-buttons {
+      display: flex;
+      gap: 7px;
+      flex-shrink: 0;
+    }
+
+    .history-panel { margin-top: 22px; }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .empty {
+      padding: 22px 8px;
+      color: var(--muted);
+      text-align: center;
+      font-size: .9rem;
+    }
+
+    .warning {
+      padding: 14px 18px;
+      margin: 18px 0;
+      border-radius: 12px;
+      border: 1px solid #b69c5a;
+      color: #ffe3a1;
+      background: #423721;
+    }
+
+    .toast {
+      position: fixed;
+      z-index: 10;
+      bottom: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: max-content;
+      max-width: calc(100vw - 32px);
+      padding: 12px 20px;
+      border-radius: 13px;
+      background: #e4fff2;
+      color: #173e2c;
+      font-weight: 650;
+      box-shadow: 0 8px 30px #0005;
+    }
+
+    .toast:empty { display: none; }
+
+    footer {
+      padding: 26px 0 10px;
+      text-align: center;
+      font-size: .8rem;
+      color: var(--muted);
+    }
+
+    .pop { animation: pop .22s ease-out; }
+
+    @keyframes pop {
+      from { transform: scale(.97); opacity: .6; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    @media (max-width: 780px) {
+      .container { padding-top: 30px; }
+      .layout { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 440px) {
+      .container { padding-left: 14px; padding-right: 14px; }
+      .panel { padding: 19px; }
+      .stats { gap: 8px; }
+      .stat { padding: 14px 10px; text-align: center; }
+      .stat strong { font-size: 1.7rem; }
+      .stat span { font-size: .75rem; }
+      .list-item { flex-wrap: wrap; }
+      .item-buttons { margin-left: auto; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header>
+      <p class="eyebrow">TINY QUEST / 一次完成一件小事</p>
+      <h1>今天先做哪件事？</h1>
+      <p class="intro">
+        不用等到充滿動力才開始。選一個方向、抽一件小事，
+        把零碎時間變成今天的小小成就。
+      </p>
+    </header>
+
+    <div id="storageWarning" class="warning" role="alert" hidden></div>
+
+    <section class="stats" aria-label="完成統計">
+      <div class="stat">
+        <strong id="todayCount">0</strong>
+        <span>今日完成</span>
+      </div>
+      <div class="stat">
+        <strong id="totalCount">0</strong>
+        <span>累積完成</span>
+      </div>
+      <div class="stat">
+        <strong id="taskCount">0</strong>
+        <span>我的任務</span>
+      </div>
+    </section>
+
+    <div class="layout">
+      <section class="panel" aria-labelledby="drawHeading">
+        <h2 id="drawHeading">🎲 把選擇交給抽籤</h2>
+        <p class="muted">今天想往哪個方向前進一小步？</p>
+
+        <div class="fields">
+          <div>
+            <label for="categoryFilter">任務類型</label>
+            <select id="categoryFilter">
+              <option value="全部">全部類型</option>
+              <option value="整理">🧹 整理</option>
+              <option value="學習">📚 學習</option>
+              <option value="健康">🌿 健康</option>
+              <option value="放鬆">☁️ 放鬆</option>
+            </select>
+          </div>
+          <div>
+            <label for="timeFilter">我有多少時間？</label>
+            <select id="timeFilter">
+              <option value="0">時間不限</option>
+              <option value="5">5 分鐘以內</option>
+              <option value="10">10 分鐘以內</option>
+              <option value="20">20 分鐘以內</option>
+            </select>
+          </div>
+        </div>
+
+        <p id="matchCount" class="muted"></p>
+        <button id="drawButton" class="full-button" type="button">
+          幫我抽一件 →
+        </button>
+
+        <div id="resultCard" class="result">
+          <div id="resultText" role="status" aria-live="polite"
+               aria-atomic="true">
+            <div id="resultIcon" class="result-icon" aria-hidden="true">✨</div>
+            <h3 id="resultTitle">你的下一個小成就，等你抽出來</h3>
+            <p id="resultMeta">選好條件，按下上方按鈕就能開始。</p>
+          </div>
+          <div id="resultActions" class="actions" hidden>
+            <button id="completeButton" type="button">✓ 我完成了</button>
+            <button id="redrawButton" class="secondary" type="button">
+              換一件
+            </button>
+          </div>
+        </div>
+
+        <p class="tip">
+          小提醒：時間是預估值，不是倒數計時。依照自己的步調完成就好。
+        </p>
+      </section>
+
+      <section class="panel" aria-labelledby="manageHeading">
+        <h2 id="manageHeading">📝 我的任務口袋</h2>
+        <p class="muted">保留喜歡的小事，也可以加入自己的點子。</p>
+
+        <form id="taskForm" class="form-area">
+          <h3 id="formTitle">新增一件小任務</h3>
+
+          <label for="taskName">任務名稱（最多 50 字）</label>
+          <input id="taskName" type="text" maxlength="50" required
+                 placeholder="例如：把書桌上的杯子收好"
+                 autocomplete="off">
+
+          <div class="fields">
+            <div>
+              <label for="taskCategory">類型</label>
+              <select id="taskCategory">
+                <option value="整理">🧹 整理</option>
+                <option value="學習">📚 學習</option>
+                <option value="健康">🌿 健康</option>
+                <option value="放鬆">☁️ 放鬆</option>
+              </select>
+            </div>
+            <div>
+              <label for="taskMinutes">預估分鐘（1～120）</label>
+              <input id="taskMinutes" type="number"
+                     min="1" max="120" step="1" value="5" required>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button id="saveTaskButton" type="submit">＋ 新增任務</button>
+            <button id="cancelEditButton" class="secondary"
+                    type="button" hidden>取消編輯</button>
+          </div>
+        </form>
+
+        <p class="muted">全部任務，不受左側抽籤條件影響：</p>
+        <ul id="taskList" class="list task-list" aria-label="任務清單"></ul>
+      </section>
+    </div>
+
+    <section class="panel history-panel" aria-labelledby="historyHeading">
+      <div class="section-head">
+        <div>
+          <h2 id="historyHeading">🌱 小小成就紀錄</h2>
+          <p class="muted">顯示最近 20 筆，每一次開始都值得留下。</p>
+        </div>
+        <button id="clearHistoryButton" class="danger small" type="button">
+          清除全部紀錄
+        </button>
+      </div>
+      <ul id="historyList" class="list" aria-label="完成紀錄"></ul>
+    </section>
+
+    <footer>
+      資料只儲存在目前瀏覽器，不會上傳至伺服器。<br>
+      Tiny Quest · 用一件小事，啟動今天。
+    </footer>
+  </main>
+
+  <div id="toast" class="toast" role="status"
+       aria-live="polite" aria-atomic="true"></div>
+
+  <script>
+    "use strict";
+
+    const STORAGE_KEY = "tiny-quest-v1";
+    const CATEGORIES = ["整理", "學習", "健康", "放鬆"];
+    const ICONS = {
+      "整理": "🧹",
+      "學習": "📚",
+      "健康": "🌿",
+      "放鬆": "☁️"
+    };
+
+    const $ = id => document.getElementById(id);
+
+    function uid() {
+      if (globalThis.crypto &&
+          typeof globalThis.crypto.randomUUID === "function") {
+        return globalThis.crypto.randomUUID();
+      }
+      return Date.now().toString(36) + "-" +
+        Math.random().toString(36).slice(2);
+    }
+
+    function createInitialState() {
+      const examples = [
+        ["整理書桌的一個角落", "整理", 5],
+        ["刪除手機裡 10 張不需要的照片", "整理", 5],
+        ["整理書包或隨身包", "整理", 10],
+        ["讀 5 頁想看的書", "學習", 10],
+        ["複習 5 個英文單字", "學習", 5],
+        ["寫下今天學到的一件事", "學習", 5],
+        ["起身做溫和的肩頸伸展", "健康", 3],
+        ["喝點水，讓眼睛離開螢幕休息", "健康", 2],
+        ["在安全的地方散步", "健康", 15],
+        ["專心聽一首喜歡的歌", "放鬆", 5],
+        ["寫下三件值得感謝的小事", "放鬆", 5],
+        ["畫一張不追求完美的小塗鴉", "放鬆", 10]
+      ];
+
+      return {
+        version: 1,
+        tasks: examples.map(([name, category, minutes]) => ({
+          id: uid(), name, category, minutes
+        })),
+        history: [],
+        filters: { category: "全部", maxMinutes: 0 }
+      };
+    }
+
+    function validTask(task) {
+      return task &&
+        typeof task.id === "string" && task.id.length > 0 &&
+        typeof task.name === "string" &&
+        task.name.trim().length > 0 && task.name.length <= 50 &&
+        CATEGORIES.includes(task.category) &&
+        Number.isInteger(task.minutes) &&
+        task.minutes >= 1 && task.minutes <= 120;
+    }
+
+    function hasUniqueIds(items) {
+      return new Set(items.map(item => item.id)).size === items.length;
+    }
+
+    function showStorageWarning(message) {
+      $("storageWarning").textContent = message;
+      $("storageWarning").hidden = false;
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw === null) return createInitialState();
+
+        const data = JSON.parse(raw);
+        const validHistory = Array.isArray(data?.history) &&
+          data.history.every(record =>
+            validTask(record) &&
+            typeof record.taskId === "string" &&
+            typeof record.completedAt === "string" &&
+            Number.isFinite(Date.parse(record.completedAt))
+          );
+
+        if (
+          !data || data.version !== 1 ||
+          !Array.isArray(data.tasks) ||
+          !data.tasks.every(validTask) ||
+          !hasUniqueIds(data.tasks) ||
+          !validHistory ||
+          !hasUniqueIds(data.history)
+        ) {
+          throw new Error("Invalid saved data");
+        }
+
+        const filters = data.filters || {};
+        data.filters = {
+          category: ["全部", ...CATEGORIES].includes(filters.category)
+            ? filters.category : "全部",
+          maxMinutes: [0, 5, 10, 20].includes(filters.maxMinutes)
+            ? filters.maxMinutes : 0
+        };
+
+        return data;
+      } catch (error) {
+        showStorageWarning(
+          "無法讀取原有資料，已暫時載入預設任務。" +
+          "若原有資料損壞，下一次成功儲存將以目前內容取代。"
+        );
+        return createInitialState();
+      }
+    }
+
+    let state = loadState();
+    let selectedTask = null;
+    let selectionCompleted = false;
+    let lastDrawId = null;
+    let editingId = null;
+    let toastTimer;
+
+    function persist() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        $("storageWarning").hidden = true;
+      } catch (error) {
+        showStorageWarning(
+          "目前無法保存資料，可能是瀏覽器限制或儲存空間不足。" +
+          "你仍可繼續操作，但最新變更可能在關閉或重新整理後消失。"
+        );
+      }
+    }
+
+    function notify(message) {
+      clearTimeout(toastTimer);
+      $("toast").textContent = message;
+      toastTimer = setTimeout(() => {
+        $("toast").textContent = "";
+      }, 3500);
+    }
+
+    function makeElement(tag, className, text) {
+      const element = document.createElement(tag);
+      if (className) element.className = className;
+      if (text !== undefined) element.textContent = text;
+      return element;
+    }
+
+    function localDateKey(value) {
+      const date = new Date(value);
+      return [
+        date.getFullYear(),
+        String(date.getMonth() + 1).padStart(2, "0"),
+        String(date.getDate()).padStart(2, "0")
+      ].join("-");
+    }
+
+    function renderStats() {
+      const today = localDateKey(new Date());
+      $("todayCount").textContent = state.history.filter(record =>
+        localDateKey(record.completedAt) === today
+      ).length;
+      $("totalCount").textContent = state.history.length;
+      $("taskCount").textContent = state.tasks.length;
+    }
+
+    function matchingTasks() {
+      return state.tasks.filter(task =>
+        (state.filters.category === "全部" ||
+          task.category === state.filters.category) &&
+        (state.filters.maxMinutes === 0 ||
+          task.minutes <= state.filters.maxMinutes)
+      );
+    }
+
+    function renderMatchCount() {
+      const count = matchingTasks().length;
+      $("matchCount").textContent = count
+        ? `目前有 ${count} 件任務符合條件。`
+        : "目前沒有符合條件的任務，試著放寬條件或新增一件吧。";
+    }
+
+    function clearSelection(
+      title = "你的下一個小成就，等你抽出來",
+      message = "選好條件，按下上方按鈕就能開始。"
+    ) {
+      selectedTask = null;
+      selectionCompleted = false;
+      $("resultIcon").textContent = "✨";
+      $("resultTitle").textContent = title;
+      $("resultMeta").textContent = message;
+      $("resultActions").hidden = true;
+      $("completeButton").disabled = false;
+      $("completeButton").textContent = "✓ 我完成了";
+    }
+
+    function drawTask() {
+      let candidates = matchingTasks();
+
+      if (candidates.length === 0) {
+        clearSelection(
+          "這個口袋暫時空空的",
+          "換個類型、增加可用時間，或到任務口袋新增一件小事。"
+        );
+        notify("目前沒有符合條件的任務。");
+        return;
+      }
+
+      // 多於一件可選任務時，避免與上一抽相同。
+      if (candidates.length > 1) {
+        candidates = candidates.filter(task => task.id !== lastDrawId);
+      }
+
+      const task = candidates[Math.floor(Math.random() * candidates.length)];
+      selectedTask = { ...task };
+      selectionCompleted = false;
+      lastDrawId = task.id;
+
+      $("resultIcon").textContent = ICONS[task.category];
+      $("resultTitle").textContent = task.name;
+      $("resultMeta").textContent =
+        `${task.category} · 約 ${task.minutes} 分鐘 · 從這件小事開始吧！`;
+      $("resultActions").hidden = false;
+      $("completeButton").disabled = false;
+      $("completeButton").textContent = "✓ 我完成了";
+
+      const card = $("resultCard");
+      card.classList.remove("pop");
+      void card.offsetWidth;
+      card.classList.add("pop");
+    }
+
+    function completeTask() {
+      if (!selectedTask || selectionCompleted) return;
+
+      // 先鎖定本次結果，避免快速連點新增多筆紀錄。
+      selectionCompleted = true;
+
+      state.history.unshift({
+        id: uid(),
+        taskId: selectedTask.id,
+        name: selectedTask.name,
+        category: selectedTask.category,
+        minutes: selectedTask.minutes,
+        completedAt: new Date().toISOString()
+      });
+
+      $("completeButton").disabled = true;
+      $("completeButton").textContent = "已完成 ✓";
+      $("resultIcon").textContent = "🎉";
+      $("resultMeta").textContent = "已記錄這次完成！想繼續的話，再抽一件吧。";
+
+      persist();
+      renderStats();
+      renderHistory();
+      notify("完成一件小事，也是在前進。做得好！");
+    }
+
+    function resetForm() {
+      editingId = null;
+      $("taskForm").reset();
+      $("taskName").setCustomValidity("");
+      $("formTitle").textContent = "新增一件小任務";
+      $("saveTaskButton").textContent = "＋ 新增任務";
+      $("cancelEditButton").hidden = true;
+    }
+
+    function editTask(id) {
+      const task = state.tasks.find(item => item.id === id);
+      if (!task) return;
+
+      editingId = id;
+      $("taskName").setCustomValidity("");
+      $("taskName").value = task.name;
+      $("taskCategory").value = task.category;
+      $("taskMinutes").value = task.minutes;
+      $("formTitle").textContent = "編輯這件小任務";
+      $("saveTaskButton").textContent = "儲存修改";
+      $("cancelEditButton").hidden = false;
+      $("taskName").focus();
+    }
+
+    function deleteTask(id) {
+      const task = state.tasks.find(item => item.id === id);
+      if (!task) return;
+
+      if (!confirm(`確定刪除「${task.name}」嗎？過去的完成紀錄會保留。`)) {
+        return;
+      }
+
+      state.tasks = state.tasks.filter(item => item.id !== id);
+
+      if (selectedTask?.id === id) {
+        clearSelection("這件任務已刪除", "請再抽一件新的小任務。");
+      }
+
+      if (editingId === id) resetForm();
+
+      persist();
+      renderTasks();
+      renderStats();
+      renderMatchCount();
+      notify("任務已刪除，原有完成紀錄不受影響。");
+    }
+
+    function renderTasks() {
+      const list = $("taskList");
+      list.replaceChildren();
+
+      if (state.tasks.length === 0) {
+        list.append(makeElement(
+          "li", "empty", "還沒有任務，從上方新增第一件小事吧！"
+        ));
+        return;
+      }
+
+      for (const task of state.tasks) {
+        const item = makeElement("li", "list-item");
+        const info = makeElement("div", "item-info");
+
+        info.append(
+          makeElement("span", "item-title",
+            `${ICONS[task.category]} ${task.name}`),
+          makeElement("span", "item-meta",
+            `${task.category} · 約 ${task.minutes} 分鐘`)
+        );
+
+        const buttons = makeElement("div", "item-buttons");
+        const edit = makeElement("button", "secondary small", "編輯");
+        const remove = makeElement("button", "danger small", "刪除");
+
+        edit.type = "button";
+        remove.type = "button";
+        edit.setAttribute("aria-label", `編輯任務：${task.name}`);
+        remove.setAttribute("aria-label", `刪除任務：${task.name}`);
+
+        edit.addEventListener("click", () => editTask(task.id));
+        remove.addEventListener("click", () => deleteTask(task.id));
+
+        buttons.append(edit, remove);
+        item.append(info, buttons);
+        list.append(item);
+      }
+    }
+
+    const dateFormatter = new Intl.DateTimeFormat("zh-TW", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
+    });
+
+    function renderHistory() {
+      const list = $("historyList");
+      list.replaceChildren();
+      $("clearHistoryButton").disabled = state.history.length === 0;
+
+      if (state.history.length === 0) {
+        list.append(makeElement(
+          "li", "empty",
+          "還沒有完成紀錄。先抽一件小任務，留下今天的第一個成就！"
+        ));
+        return;
+      }
+
+      for (const record of state.history.slice(0, 20)) {
+        const item = makeElement("li", "list-item");
+        const info = makeElement("div", "item-info");
+
+        info.append(
+          makeElement("span", "item-title", `✓ ${record.name}`),
+          makeElement("span", "item-meta",
+            `${record.category} · 約 ${record.minutes} 分鐘`)
+        );
+
+        const time = makeElement("time", "item-meta",
+          dateFormatter.format(new Date(record.completedAt)));
+        time.dateTime = record.completedAt;
+
+        item.append(info, time);
+        list.append(item);
+      }
+    }
+
+    $("taskForm").addEventListener("submit", event => {
+      event.preventDefault();
+
+      const name = $("taskName").value.trim();
+      const category = $("taskCategory").value;
+      const minutes = Number($("taskMinutes").value);
+
+      if (!name || name.length > 50) {
+        $("taskName").setCustomValidity("請輸入 1～50 字的非空白任務名稱。");
+        $("taskName").reportValidity();
+        return;
+      }
+
+      if (!CATEGORIES.includes(category) ||
+          !Number.isInteger(minutes) || minutes < 1 || minutes > 120) {
+        notify("請選擇有效類型，並輸入 1～120 的整數分鐘。");
+        return;
+      }
+
+      const isEditing = editingId !== null;
+
+      if (isEditing) {
+        const index = state.tasks.findIndex(task => task.id === editingId);
+
+        if (index === -1) {
+          resetForm();
+          notify("找不到這件任務，請重新操作。");
+          return;
+        }
+
+        state.tasks[index] = { id: editingId, name, category, minutes };
+
+        if (selectedTask?.id === editingId) {
+          clearSelection("任務內容已更新", "請重新抽籤，取得最新的任務內容。");
+        }
+      } else {
+        state.tasks.push({ id: uid(), name, category, minutes });
+      }
+
+      persist();
+      resetForm();
+      renderTasks();
+      renderStats();
+      renderMatchCount();
+      notify(isEditing ? "任務修改完成！" : "新任務已放入口袋！");
+    });
+
+    $("taskName").addEventListener("input", () => {
+      $("taskName").setCustomValidity("");
+    });
+
+    function updateFilters() {
+      state.filters.category = $("categoryFilter").value;
+      state.filters.maxMinutes = Number($("timeFilter").value);
+      persist();
+      renderMatchCount();
+      clearSelection("條件選好了，來抽一件吧", "按下「幫我抽一件」開始。");
+    }
+
+    $("categoryFilter").addEventListener("change", updateFilters);
+    $("timeFilter").addEventListener("change", updateFilters);
+    $("drawButton").addEventListener("click", drawTask);
+    $("redrawButton").addEventListener("click", drawTask);
+    $("completeButton").addEventListener("click", completeTask);
+    $("cancelEditButton").addEventListener("click", resetForm);
+
+    $("clearHistoryButton").addEventListener("click", () => {
+      if (state.history.length === 0) return;
+      if (!confirm("確定清除全部完成紀錄？此操作無法復原，任務清單會保留。")) {
+        return;
+      }
+
+      state.history = [];
+
+      if (selectionCompleted) {
+        clearSelection("紀錄已清除", "重新抽一件，開始新的小成就。");
+      }
+
+      persist();
+      renderStats();
+      renderHistory();
+      notify("完成紀錄已清除，任務清單仍保留。");
+    });
+
+    $("categoryFilter").value = state.filters.category;
+    $("timeFilter").value = String(state.filters.maxMinutes);
+
+    renderStats();
+    renderTasks();
+    renderHistory();
+    renderMatchCount();
+
+    // 頁面跨日開著時，更新「今日完成」統計。
+    setInterval(renderStats, 60000);
+
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) renderStats();
+    });
+  </script>
+</body>
+</html>
